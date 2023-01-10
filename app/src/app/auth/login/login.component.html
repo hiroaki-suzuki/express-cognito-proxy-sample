@@ -9,4 +9,8 @@
     <button (click)="signOut()">Sign Out</button>
   </ng-template>
 </amplify-authenticator>
-
+<div class="buttons">
+  <button (click)="onAuth()">認証あり</button>
+  <button (click)="onPublic()">認証なし</button>
+  <p>{{message}}</p>
+</div>

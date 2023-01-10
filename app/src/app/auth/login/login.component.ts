@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Amplify, Signer } from 'aws-amplify';
+import { Amplify, API, Signer } from 'aws-amplify';
 import { FetchHttpHandler } from '@aws-sdk/fetch-http-handler';
 import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http';
 import { HttpHandlerOptions } from '@aws-sdk/types';
@@ -11,6 +11,8 @@ import { environment } from '../../../environments/environment';
   styleUrls: ['./login.component.css'],
 })
 export class LoginComponent implements OnInit {
+  message: string = '';
+
   constructor() {}
 
   ngOnInit(): void {
@@ -18,15 +20,15 @@ export class LoginComponent implements OnInit {
 
     // ユーザープールのエンドポイント
     // AmplifyのAuth.endpointでも書き換え可能
-    // ただし、古いバージョンだと設定が用意されていないため、以下のような形で無理やり書き換える
-    // バージョンによっては以下がなかったりするので、その場合は別のポイントを見つける必要がある
+    // 以下のような形で無理やり書き換えられるが、
+    // バージョンによっては以下がない可能性があるので、その場合は別のポイントを見つける必要がある
     Amplify.Auth.userPool.client.endpoint =
       environment.cognito.userPoolEndpoint;
 
     // IDプールのエンドポイント
     // Amplifyの方では提供されていないようで、書き換えがConfigではできなかった
-    // 以下のような形で無理やり書き換える
-    // バージョンによっては以下がなかったりするので、その場合は別のポイントを見つける必要がある
+    // 以下のような形で無理やり書き換えられるが、
+    // バージョンによっては以下がない可能性があるので、その場合は別のポイントを見つける必要がある
     const orgHandleFunc = FetchHttpHandler.prototype.handle;
     FetchHttpHandler.prototype.handle = (
       request: HttpRequest,
@@ -42,21 +44,46 @@ export class LoginComponent implements OnInit {
       return orgHandleFunc.call(this, request, options);
     };
 
-    // TODO
-    // API GatewayのIAM認証を使用する場合に、ホストが合わずエラーになるため一時的に書き換える
-    // const orgSignFunc = Signer.sign;
-    // Signer.sign = (request: any, access_info: any, service_info?: any) => {
-    //   const url = request.url;
-    //
-    //   request.url = url.replace(
-    //     'proxy.domain/rootpath',
-    //     'xxxxxx.execute-api.ap-northeast-1.amazonaws.com/test'
-    //   );
-    //
-    //   const signedRequest = orgSignFunc(request, access_info, service_info);
-    //   signedRequest.url = url;
-    //
-    //   return signedRequest;
-    // }
+    // API GatewayのIAM認証を使用する場合に、署名のホストが合わずエラーになるため一時的に書き換える
+    // 以下のような形で無理やり書き換えられるが、
+    // バージョンによっては以下がない可能性があるので、その場合は別のポイントを見つける必要がある
+    const orgSignFunc = Signer.sign;
+    Signer.sign = (request: any, access_info: any, service_info?: any) => {
+      const url = request.url;
+
+      request.url = url.replace(
+        environment.api.proxyHostPath,
+        environment.api.apiGatewayHostPath
+      );
+
+      const signedRequest = orgSignFunc(request, access_info, service_info);
+      signedRequest.url = url;
+
+      return signedRequest;
+    };
+  }
+
+  onAuth() {
+    API.get('api', '/auth', {})
+      .then((req) => {
+        console.log(req);
+        this.message = req.message;
+      })
+      .catch((err) => {
+        console.log(err);
+        this.message = err.message;
+      });
+  }
+
+  onPublic() {
+    API.get('api', '/public', {})
+      .then((req) => {
+        console.log(req);
+        this.message = req.message;
+      })
+      .catch((err) => {
+        console.log(err);
+        this.message = err.message;
+      });
   }
 }

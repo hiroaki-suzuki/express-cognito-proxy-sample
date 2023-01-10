@@ -18,11 +18,24 @@ export const environment = {
       // https://cognito-idp.ap-northeast-1.amazonaws.com
       endpoint: 'http://localhost:8080/auth-idp/',
     },
+    API: {
+      endpoints: [
+        {
+          name: 'api',
+          endpoint: 'http://localhost:8080/api',
+        },
+      ],
+    },
   },
   cognito: {
     userPoolEndpoint: 'http://localhost:8080/auth-idp/',
     idPoolHostname: 'localhost:8080/auth-ide',
     idPoolProtocol: 'http:',
+  },
+  api: {
+    proxyHostPath: 'localhost:8080/api',
+    apiGatewayHostPath:
+      'xxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/dev',
   },
 };
 
